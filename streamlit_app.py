@@ -1,19 +1,18 @@
 import streamlit as st
 import lightgbm as lgb
 import pandas as pd
-import joblib
 
-# Load trained model
+# Load trained model from native format
 model = lgb.Booster(model_file='lgbm_churn_model.txt')
 
 # Get model feature names
-model_features = model.feature_name_
+model_features = model.feature_name()
 
 # App title
 st.title("Churn Probability Predictor")
 st.write("Enter key customer features to predict churn probability.")
 
-# Example input fields (adjust to match your top features)
+# Example input fields (adjust as needed for your key features)
 X1 = st.number_input("X1 (numeric)", value=1600)
 X98 = st.number_input("X98 (numeric)", value=0.0)
 X19 = st.number_input("X19 (numeric)", value=0.0)
@@ -22,7 +21,7 @@ lease_duration = st.number_input("Lease duration (X0 numeric)", value=12)
 
 # Predict
 if st.button("Predict"):
-    # Build input dataframe with provided fields
+    # Build input dataframe
     input_df = pd.DataFrame({
         'X1': [X1],
         'X98': [X98],
@@ -31,7 +30,7 @@ if st.button("Predict"):
         'X0': [lease_duration]
     })
 
-    # Add missing columns expected by model, fill with 0
+    # Add any missing features the model expects
     for col in model_features:
         if col not in input_df.columns:
             input_df[col] = 0
@@ -39,8 +38,9 @@ if st.button("Predict"):
     # Reorder columns to match model
     input_df = input_df[model_features]
 
-    # Predict churn probability
-    prob = model.predict_proba(input_df)[:, 1][0]
+    # Get prediction
+    prob = model.predict(input_df)[0]
+
     st.success(f"Predicted churn probability: {prob:.2%}")
 
     if prob > 0.5:
